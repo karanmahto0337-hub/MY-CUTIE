@@ -9,22 +9,19 @@ BOT_TOKEN = "8813016822:AAFuSYJCWV9Tw0e0J_29vGhf63oqujOU7OQ".strip()
 # 2. Yahan apni Groq Key (gsk_... wali) daalein
 AI_API_KEY = "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".strip()
 
-# 3. Apna Render wala Link (https://...onrender.com) yahan daalein
+# 3. Apna Render wala Link daalein
 RENDER_URL = "https://my-cutie.onrender.com/".strip().rstrip('/')
 
 bot = telebot.TeleBot(BOT_TOKEN, threaded=False)
 app = Flask(__name__)
 
 def get_working_model(headers):
-    # Groq se puchna ki kaunse AI models active hain
     try:
         r = requests.get("https://api.groq.com/openai/v1/models", headers=headers)
         models = [m["id"] for m in r.json().get("data", [])]
-        # Sabse best chat model chunna
         for preferred in ["llama-3.1-8b-instant", "llama3-8b-8192", "gemma2-9b-it"]:
             if preferred in models:
                 return preferred
-        # Koi bhi llama ya chat model jo active ho
         for m in models:
             if "whisper" not in m and "guard" not in m and "tts" not in m:
                 return m
@@ -44,9 +41,10 @@ def ask_ai(user_text):
     data = {
         "model": active_model,
         "messages": [
-            {"role": "system", "content": "You are a helpful, smart AI assistant like ChatGPT. Reply naturally in the same language the user speaks (Hindi, Hinglish, or English)."},
+            {"role": "system", "content": "You are a helpful AI assistant. Always reply cleanly in Hinglish (Hindi written in English letters, like 'Main badhiya hoon') or English. Avoid repetitive characters or loops."},
             {"role": "user", "content": user_text}
-        ]
+        ],
+        "max_tokens": 1000
     }
     res = requests.post(url, headers=headers, json=data)
     res_json = res.json()
@@ -59,7 +57,7 @@ def ask_ai(user_text):
 def send_welcome(message):
     bot.reply_to(
         message, 
-        "Namaste! 🤖 Main Super-Fast AI Bot hoon.\nMujhse koi bhi sawal puchiye, main palak jhapakte hi jawab dunga!"
+        "Namaste! 🤖 Main aapka AI Bot hoon. Ab aap mujhse kuch bhi puchiye!"
     )
 
 @bot.message_handler(func=lambda msg: True)
