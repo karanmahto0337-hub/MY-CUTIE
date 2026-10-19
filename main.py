@@ -15,14 +15,34 @@ RENDER_URL = "https://my-cutie.onrender.com/".strip().rstrip('/')
 bot = telebot.TeleBot(BOT_TOKEN, threaded=False)
 app = Flask(__name__)
 
+def get_working_model(headers):
+    # Groq se puchna ki kaunse AI models active hain
+    try:
+        r = requests.get("https://api.groq.com/openai/v1/models", headers=headers)
+        models = [m["id"] for m in r.json().get("data", [])]
+        # Sabse best chat model chunna
+        for preferred in ["llama-3.1-8b-instant", "llama3-8b-8192", "gemma2-9b-it"]:
+            if preferred in models:
+                return preferred
+        # Koi bhi llama ya chat model jo active ho
+        for m in models:
+            if "whisper" not in m and "guard" not in m and "tts" not in m:
+                return m
+    except Exception:
+        pass
+    return "llama-3.1-8b-instant"
+
 def ask_ai(user_text):
     url = "https://api.groq.com/openai/v1/chat/completions"
     headers = {
         "Authorization": f"Bearer {AI_API_KEY}",
         "Content-Type": "application/json"
     }
+    
+    active_model = get_working_model(headers)
+    
     data = {
-        "model": "llama-3.3-70b-versatile",
+        "model": active_model,
         "messages": [
             {"role": "system", "content": "You are a helpful, smart AI assistant like ChatGPT. Reply naturally in the same language the user speaks (Hindi, Hinglish, or English)."},
             {"role": "user", "content": user_text}
