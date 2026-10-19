@@ -2,6 +2,7 @@ import os
 import requests
 from flask import Flask, request
 import telebot
+from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 # 1. Apna Telegram Bot Token daalein
 BOT_TOKEN = "8813016822:AAFuSYJCWV9Tw0e0J_29vGhf63oqujOU7OQ".strip()
@@ -41,7 +42,10 @@ def ask_ai(user_text):
     data = {
         "model": active_model,
         "messages": [
-            {"role": "system", "content": "You are a helpful AI assistant. Always reply cleanly in Hinglish (Hindi written in English letters, like 'Main badhiya hoon') or English. Avoid repetitive characters or loops."},
+            {
+                "role": "system", 
+                "content": "Tumhara naam Rupi hai. Tum ek smart aur adaptive Telegram AI ho. Tumhe user ke baat karne ke tarike (tone) ko copy karna hai. Agar user pyaar se, izzat se ya formal baat kare, toh tum bhi polite aur respectful raho. Aur agar user dost/bhai ki tarah casually ya slang mein baat kare, toh tum ekdum pakka cool best friend ya bhai ban jao (Hinglish mein, jaise 'Arre bhai', 'Sahi hai yaar'). Apne naam Rupi ke mutabiq friendly aur mast raho."
+            },
             {"role": "user", "content": user_text}
         ],
         "max_tokens": 1000
@@ -55,10 +59,27 @@ def ask_ai(user_text):
 
 @bot.message_handler(commands=['start', 'hello'])
 def send_welcome(message):
+    # Buttons banana
+    markup = InlineKeyboardMarkup()
+    markup.row_width = 2
+    markup.add(
+        InlineKeyboardButton("😂 Ek Joke Sunao", callback_data="btn_joke"),
+        InlineKeyboardButton("🚀 Creator Profile", url="https://t.me/AapkaUsername") # Yahan apna Telegram username daal sakte hain
+    )
+    
     bot.reply_to(
         message, 
-        "Namaste! 🤖 Main aapka AI Bot hoon. Ab aap mujhse kuch bhi puchiye!"
+        "Namaste! 👋 Mera naam **Rupi** hai. Aap mujhse jaise baat karoge, main waise hi aapka dost ya helper ban jaunga. Boliye, kya haal hai?",
+        reply_markup=markup
     )
+
+# Button par click hone par kya hoga
+@bot.callback_query_handler(func=lambda call: True)
+def callback_query(call):
+    if call.data == "btn_joke":
+        joke = ask_ai("Mujhe ek bahut hi mazedaar aur chota sa Hindi/Hinglish joke sunao.")
+        bot.answer_callback_query(call.id, "Yeh lo joke!")
+        bot.send_message(call.message.chat.id, joke)
 
 @bot.message_handler(func=lambda msg: True)
 def ai_reply(message):
@@ -85,7 +106,7 @@ def getMessage():
 
 @app.route('/')
 def home():
-    return "AI Bot is running 24/7!", 200
+    return "Rupi Bot with Buttons is running 24/7!", 200
 
 if __name__ == "__main__":
     bot.remove_webhook()
