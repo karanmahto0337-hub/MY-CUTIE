@@ -3,11 +3,11 @@ from flask import Flask
 import telebot
 from google import genai
 
-# 1. Yahan apna Telegram Bot Token daalein
-BOT_TOKEN = "8813016822:AAFuSYJCWV9Tw0e0J_29vGhf63oqujOU7OQ"
+# 1. Apna Telegram Bot Token (Bina kisi space ke)
+BOT_TOKEN = "8813016822:AAFuSYJCWV9Tw0e0J_29vGhf63oqujOU7OQ".strip()
 
-# 2. Yahan apni nayi Google AI Key (AIzaSy... wali) daalein
-GEMINI_API_KEY = "AQ.Ab8RN6KlLbrTgGzWvGwA4JC-HaDvNyJ_yYL80jXvyJy0P7pC5w"
+# 2. Apni Google AI Key (AIzaSy... se shuru hone wali, bina kisi space ke)
+GEMINI_API_KEY = "AQ.Ab8RN6KlLbrTgGzWvGwA4JC-HaDvNyJ_yYL80jXvyJy0P7pC5w".strip()
 
 bot = telebot.TeleBot(BOT_TOKEN)
 client = genai.Client(api_key=GEMINI_API_KEY)
@@ -16,26 +16,32 @@ client = genai.Client(api_key=GEMINI_API_KEY)
 def send_welcome(message):
     bot.reply_to(
         message, 
-        "Namaste! 🤖 Main ek Super AI Bot hoon.\nMujhse koi bhi sawal puchiye, main ChatGPT aur Google ki tarah jawab dunga!"
+        "Namaste! 🤖 Main ek Super AI Bot hoon.\nMujhse koi bhi sawal puchiye!"
     )
 
 @bot.message_handler(func=lambda msg: True)
 def ai_reply(message):
     try:
-        # User ko "Typing..." dikhane ke liye
         bot.send_chat_action(message.chat.id, 'typing')
         
-        # AI Dimaag se jawab mangwana
+        # AI se jawab mangwana
         response = client.models.generate_content(
             model='gemini-2.5-flash',
             contents=message.text,
         )
         
-        # User ko jawab bhejna
-        bot.reply_to(message, response.text)
+        reply_text = response.text
         
+        # Telegram ek baar mein 4000 se zyada akshar nahi bhej sakta, isliye tukdo mein bhejenge
+        if len(reply_text) > 4000:
+            for i in range(0, len(reply_text), 4000):
+                bot.reply_to(message, reply_text[i:i+4000])
+        else:
+            bot.reply_to(message, reply_text)
+            
     except Exception as e:
-        bot.reply_to(message, "Maaf karna, abhi mera dimaag thoda busy hai. Ek minute baad puchiye!")
+        # Ab yeh aapko exact wajah batayega ki kya galti hui hai
+        bot.reply_to(message, f"⚠️ Technical Error:\n{str(e)}")
         print(f"Error: {e}")
 
 # --- 24/7 Server Code ---
